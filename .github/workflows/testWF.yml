@@ -1,0 +1,82 @@
+name: testWF
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch-name:
+        type: string
+        description: 'Branch'
+        required: true
+        default: 'main'
+      node-version:
+        description: 'Node version'
+        required: true
+        default: '18.20.3'
+        type: choice
+        options:
+          - 18.20.3
+          - 20.14.0
+          - 22.2.0
+      os:
+        description: 'Operating system'
+        required: true
+        default: 'ubuntu-latest'
+        type: choice
+        options:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+      debug-enabled:
+        type: boolean
+        description: 'Enable tmate debugging'
+        required: true
+        default: true
+  push:
+    branches:
+      - main
+      - stable/3.*
+  pull_request:
+  merge_group:
+
+env:
+  DEBUG: '1'
+TEST_CLI_ENV: development
+TEST_CONFIG: debug
+  PNPM_VERSION: '8.15.7'
+  BUNDLE_WITHOUT: 'test:development'
+TEST_FLAG_CLIENT_ID: ${{ secrets.TEST_FLAG_CLIENT_ID }}
+TEST_CLI_PARTNERS_TOKEN: ${{ secrets.TEST_CLI_PARTNERS_TOKEN }}
+  GH_TOKEN: ${{ secrets.TEST_GH_READ_CONTENT_TOKEN }}
+
+jobs:
+  main:
+    name: '[Main] Node ${{ matrix.node }} in ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        node: ['18.20.3', '20.14.0', '22.2.0']
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout [${{ github.ref_name }}]
+        with:
+          fetch-depth: 1
+          
+  pr-platform-agnostic:
+    name: '[PR] Run ${{ matrix.target }} with Node ${{ matrix.node }} in ${{ matrix.os }}'
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        os: ['ubuntu-latest']
+        node: ['18.20.3']
+        target: ['build', 'type-check']
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.event.repository.full_name }}
+          ref: ${{ github.event.pull_request.head.ref || github.event.merge_group.head_ref }}
+          fetch-depth: 1
