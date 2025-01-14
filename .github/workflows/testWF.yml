@@ -40,10 +40,7 @@ on:
 
 env:
   DEBUG: '1'
-TEST_CLI_ENV: development
-TEST_FLAG_CLIENT_ID: ${{ secrets.TEST_FLAG_CLIENT_ID }}
-TEST_CLI_PARTNERS_TOKEN: ${{ secrets.TEST_CLI_PARTNERS_TOKEN }}
-
+  
 jobs:
   main:
     name: '[Main] Node ${{ matrix.node }} in ${{ matrix.os }}'
